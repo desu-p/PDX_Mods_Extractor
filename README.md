@@ -1,4 +1,4 @@
-PDX Mods Extractor is a lightweight PowerShell automation tool designed for Paradox Interactive grand strategy fans who prefer manually managing their mods or downloading them from sources like Paradox Mods, direct archives, etc.
+PDX Mods Extractor is a lightweight PowerShell/Bash automation tool designed for Paradox Interactive grand strategy fans who prefer manually managing their mods or downloading them from sources like Paradox Mods, direct archives, etc.
 
 Tired of manually extracting .zip files, renaming folders, and fixing the path="mod/..." line in every single .mod descriptor? This script does it all for you in seconds.
 
@@ -24,5 +24,4 @@ If you attempt to use this with older titles or encounter any pathing issues/bug
 
 3. Enjoy your perfectly organized mod list.
 
-Note: Currently, script working only with PowerShell, I working on Bash version
-Note 2: If you're thinking that there's can be viruses, you can check this.ps1 file with Notepad 
+Note: If you're thinking that there's can be viruses, you can check this .ps1/.sh file with Notepad 
