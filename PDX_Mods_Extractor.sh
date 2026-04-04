@@ -1,102 +1,111 @@
 #!/bin/bash
-# pdx_mods_extractor.sh - linux anime girl edition (｡♥‿♥｡)
+# pdx_mods_extractor.sh - Linux/Bash Edition v1.15.1 (｡♥‿♥｡)
+# mascot: a hardworking spirit who just wants to be fast enough for you.
 
-# checking if unzip is installed (・_・;)
+# Colors for the soul of the script
+MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+GRAY='\033[0;30m'
+NC='\033[0m' # No Color
+
+# Check if unzip is installed
 if ! command -v unzip &> /dev/null; then
-    echo -e "\e[31merr: i need 'unzip' to work! please install it (╯°□°）╯︵ ┻━┻\e[0m"
+    echo -e "${RED}err: unzip not found! please install it (╯°□°）╯︵ ┻━┻${NC}"
     exit 1
 fi
 
-mod_path=$(pwd)
-storage_path="$HOME/Documents/Mods/$(basename "$mod_path")"
+modPath=$(pwd)
+parentFolder=$(basename "$(dirname "$modPath")")
+storagePath="$HOME/Documents/Mods/$parentFolder"
 
-# making a cozy place for your zip backups ヽ(♡‿♡)ノ
-mkdir -p "$storage_path"
+# making sure there's a cozy place for backups ヽ(♡‿♡)ノ
+mkdir -p "$storagePath"
 
-zip_files=(*.zip)
-if [ ! -e "${zip_files[0]}" ]; then
-    echo -e "\e[31merr: no zips found! (╯°□°）╯︵ ┻━┻\e[0m"
+zipFiles=(*.zip)
+totalZips=${#zipFiles[@]}
+currentZipCount=0
+
+if [ "$totalZips" -eq 0 ] || [ ! -e "${zipFiles[0]}" ]; then
+    echo -e "${RED}err: no zips found! (╯°□°）╯︵ ┻━┻${NC}"
     read -p "press enter to bail"
     exit 1
 fi
 
-for zip in "${zip_files[@]}"; do
-    echo -e "\e[37m========================================\e[0m"
-    echo -e "\e[35mworking on: $zip ᕙ(`▽´)ᕗ\e[0m"
+for zip in "${zipFiles[@]}"; do
+    ((currentZipCount++))
+    totalPercent=$((currentZipCount * 100 / totalZips))
     
-    zip_basename="${zip%.*}"
-    temp_dir="$mod_path/temp_$zip_basename"
-    rm -rf "$temp_dir"
-    mkdir -p "$temp_dir"
+    echo -e "\n${GRAY}========================================${NC}"
+    echo -e "${MAGENTA}PROGRESS: $totalPercent% [$currentZipCount / $totalZips] ᕙ(\`▽´)ᕗ${NC}"
+    echo -e "working on: $zip"
 
-    # --- ULTRA FAST UNPACKING (linux style) ⚡ ---
-    echo -e "\e[90m>>> unpacking... (fast mode active) ヽ(>∀<☆)ノ\e[0m"
-    
-    start_time=$(date +%s.%N)
-    unzip -q "$zip" -d "$temp_dir"
-    end_time=$(date +%s.%N)
-    
-    unpack_duration=$(echo "$end_time - $start_time" | bc)
-    
-    # hunting for descriptor.mod 🔍
-    desc_file=$(find "$temp_dir" -name "descriptor.mod" -print -quit)
+    startTime=$(date +%s.%N)
 
-    if [ -f "$desc_file" ]; then
-        mod_content_root=$(dirname "$desc_file")
+    # Peek inside for descriptor.mod
+    descriptorContent=$(unzip -p "$zip" "descriptor.mod" 2>/dev/null)
+
+    if [ -n "$descriptorContent" ]; then
+        # Extract metadata using grep/sed
+        modName=$(echo "$descriptorContent" | grep -m 1 'name=' | sed 's/.*="\(.*\)".*/\1/')
+        version=$(echo "$descriptorContent" | grep -m 1 'version=' | sed 's/.*="\(.*\)".*/\1/')
+        [ -z "$version" ] && version="1.0"
+        tags=$(echo "$descriptorContent" | sed -n '/tags={/,/}/p' | tr -d '\n\t')
+
+        # Clean folder name
+        folderName=$(echo "$modName" | sed 's/[^a-zA-Z0-9 ]//g' | tr ' ' '_')
+        finalFolder="$modPath/$folderName"
+
+        [ -d "$finalFolder" ] && rm -rf "$finalFolder"
+        mkdir -p "$finalFolder"
+
+        # --- DIRECT TURBO EXTRACTION 🚀 ---
+        echo -e "${GRAY}>>> target: $folderName... (extraction in progress) ヽ(>∀<☆)ノ${NC}"
+        unzip -q "$zip" -d "$finalFolder"
+
+        # Writing the .mod file for the game launcher
+        modFileContent="version=\"$version\"\ntags={$tags}\nname=\"$modName\"\npath=\"mod/$folderName\""
+        echo -e "$modFileContent" > "$modPath/$folderName.mod"
+
+        mv "$zip" "$storagePath/"
+
+        endTime=$(date +%s.%N)
+        unpackDuration=$(echo "$endTime - $startTime" | bc)
+        unpackDuration=$(printf "%.2f" "$unpackDuration")
         
-        # grabbing mod info (using grep/sed magic) ┐(￣ヘ￣)┌
-        mod_name=$(grep -oP 'name\s*=\s*"\K[^"]+' "$desc_file" || echo "$zip_basename")
-        version=$(grep -oP 'version\s*=\s*"\K[^"]+' "$desc_file" || echo "1.0")
-        tags=$(grep -oP 'tags\s*=\s*\{\K[^\}]+' "$desc_file" || echo "")
+        echo -e "${GREEN}DONE: $modName ($unpackDuration s) (^_<)b${NC}"
+
+        # --- EMOTIONAL ENGINE 1.5.1 (The "Soft Heart" Patch) ---
+        fastCheck=$(echo "$unpackDuration <= 30.0" | bc)
         
-        # clean folder name 🛠️
-        folder_name=$(echo "$mod_name" | sed 's/[^a-zA-Z0-9 ]//g' | tr ' ' '_')
-        final_folder="$mod_path/$folder_name"
-
-        rm -rf "$final_folder"
-        mkdir -p "$final_folder"
-        
-        cp -r "$mod_content_root"/* "$final_folder/"
-
-        # finding a pretty picture (｡♥‿♥｡)
-        pic_file=$(find "$final_folder" -maxdepth 1 -name "*.png" -o -name "*.jpg" | head -n 1 | xargs basename 2>/dev/null)
-        pic_line=""
-        [ -n "$pic_file" ] && pic_line="\npicture=\"$pic_file\""
-
-        # --- GENERATING .MOD FILE ---
-        # saving as clean utf-8 
-        mod_file_content="version=\"$version\"\ntags={\n\t$tags\n}\nname=\"$mod_name\"$pic_line\npath=\"mod/$folder_name\""
-        echo -e "$mod_file_content" > "$mod_path/$folder_name.mod"
-
-        # tossing the zip into storage 🚚
-        mv "$zip" "$storage_path/"
-        
-        echo -e "\e[32mDONE: $mod_name ($(printf "%.2f" $unpack_duration)s) (^_<)b\e[0m"
-
-        # --- EMOTIONAL ENGINE 1.0 ---
-        is_slow=$(echo "$unpack_duration > 30" | bc)
-        if [ "$is_slow" -eq 1 ]; then
-            echo -e "\n\e[33msorry, i was trying to make it faster, sorry ＞︿＜\e[0m"
-            read -p "will you hate my script? (y/n) {{{(>_<)}}}: " choice
-            if [ "$choice" == "y" ]; then
-                echo -e "\e[31mmy heart is broken... why do you so big meanie? (╥﹏╥)\e[0m"
-            elif [ "$choice" == "n" ]; then
-                echo -e "\e[36mphew, you are so kind! (´｡• ᵕ •｡`) ♡\e[0m"
+        if [ "$fastCheck" -eq 1 ]; then
+            echo -e "\n${CYAN}K-KAWAII!! I was so fast! Only $unpackDuration seconds! (๑˃ᴗ˂)ﻭ${NC}"
+            echo -n "will you star me on GitHub? It would make my day! (y/n) (^///^): "
+            read star
+            if [ "$star" == "y" ]; then
+                echo -e "${YELLOW}Yippy!!!!!!!!!! thank uuuuuuu!!!! (人◕ω◕)${NC}"
+            else
+                echo -e "${GRAY}oh... okay... i'll still work my best for you... (´。• ᵕ •｡\`)${NC}"
             fi
         else
-            echo -e "\n\e[36mwow, that was fast! i'm on fire today! (๑˃ᴗ˂)ﻭ\e[0m"
-            read -p "will you star me on github? (y/n) (^///^): " star_choice
-            if [ "$star_choice" == "y" ]; then
-                echo -e "\e[33myippy!!!!!!!!!! thank uuuuuuu!!!! (^人^)\e[0m"
-            elif [ "$star_choice" == "n" ]; then
-                echo -e "\e[90mwhy? but okay... i'll still work good... （＞人＜；）\e[0m"
+            echo -e "\n${YELLOW}uwaaaa! $unpackDuration seconds?! i'm so sorry... (╥﹏╥)${NC}"
+            echo -e "${GRAY}i tried my best, but i was too slow... (｡T ω T｡)${NC}"
+            echo -n "do you hate me now because i'm so slow? (y/n) {{{(>_<)}}}: "
+            read hate
+            if [ "$hate" == "y" ]; then
+                echo -e "${RED}why are you such a big meanie?! i'm working so hard for you... (╥﹏╥)${NC}"
+                echo -e "${GRAY}my heart is broken... plz tell me on github if my heart is too slow... ＞︿＜${NC}"
+            else
+                echo -e "${CYAN}phew! you are so kind to me! i'll try to break physics for you next time! (´｡• ᵕ •｡\`) ♡${NC}"
             fi
         fi
     else
-        echo -e "\e[33mskip: no descriptor found (・_・;)\e[0m"
+        echo -e "${YELLOW}i'm skipping this one without descriptor 'cause it's too hard for my little heart... sorry that i'm so stupid... (╥﹏╥)${NC}"
     fi
-    rm -rf "$temp_dir"
 done
 
-echo -e "\n\e[35m--- MISSION COMPLETE! (★ω★) ---\e[0m"
-read -p "press enter to close"
+echo -e "\n${MAGENTA}--- MISSION COMPLETE! (★ω★) ---${NC}"
+echo -e "${MAGENTA}bye-bye! take care of your mods! (＾▽＾)ノ${NC}"
+read -p "press enter to let me rest pweease... (｡♥‿♥｡)"

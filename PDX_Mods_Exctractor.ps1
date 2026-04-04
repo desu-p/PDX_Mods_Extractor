@@ -1,4 +1,6 @@
-# pdx_mods_extractor.ps1 - anime girl edition (｡♥‿♥｡)
+# pdx_mods_extractor.ps1 - anime girl edition v1.15.1 (｡♥‿♥｡)
+# mascot: a hardworking spirit who just wants to be fast enough for you.
+# version: 1.15.1 - "The Soft Heart Patch"
 add-type -assemblyname System.IO.Compression.FileSystem
 
 try {
@@ -6,7 +8,7 @@ try {
     $parentFolder = (Get-Item $modPath).Parent.Name
     $storagePath = Join-Path ([Environment]::GetFolderPath("MyDocuments")) "Mods\$parentFolder"
     
-    # checking if we have a place for backups ヽ(♡ Infer ♡)ノ
+    # making sure there's a cozy place for backups ヽ(♡‿♡)ノ
     if (!(Test-Path $storagePath)) {
         New-Item -ItemType Directory -Path $storagePath -Force | Out-Null
     }
@@ -29,26 +31,18 @@ try {
         write-host "working on: $($zip.Name)" -foregroundcolor white
         
         $startTime = Get-Date
-        $tempDir = Join-Path $modPath "temp_$($zip.BaseName)"
-        if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force }
-        New-Item -ItemType Directory -Path $tempDir | Out-Null
-
-        # --- ULTRA FAST UNPACKING ⚡ ---
-        write-host ">>> unpacking... (fast mode active) ヽ(>∀<☆)ノ" -foregroundcolor darkgray
         
-        $unpackStart = Get-Date
-        # no more sleeping, let's goooooooo! 🚀
-        [System.IO.Compression.ZipFile]::ExtractToDirectory($zip.FullName, $tempDir)
-        $unpackEnd = Get-Date
-        $unpackDuration = ($unpackEnd - $unpackStart).TotalSeconds
+        # Peek inside to find the descriptor - no time to waste! ⚡
+        $zipArchive = [System.IO.Compression.ZipFile]::OpenRead($zip.FullName)
+        $descriptor = $zipArchive.Entries | Where-Object { $_.Name -eq "descriptor.mod" } | Select-Object -First 1
 
-        # searching for descriptor... hope it's there (・_・;)
-        $descFile = Get-ChildItem -Path $tempDir -Filter "descriptor.mod" -Recurse -Depth 1 | Select-Object -First 1
+        if ($descriptor) {
+            # Getting mod metadata directly from memory
+            $reader = New-Object System.IO.StreamReader($descriptor.Open())
+            $content = $reader.ReadToEnd()
+            $reader.Close()
+            $zipArchive.Dispose()
 
-        if ($descFile) {
-            $modContentRoot = $descFile.Directory.FullName
-            $content = [System.IO.File]::ReadAllText($descFile.FullName)
-            
             $modName = if ($content -match 'name\s*=\s*"([^"]+)"') { $matches[1] } else { $zip.BaseName }
             $version = if ($content -match 'version\s*=\s*"([^"]+)"') { $matches[1] } else { "1.0" }
             $tags = if ($content -match 'tags\s*=\s*\{([^\}]+)\}') { $matches[1] } else { "" }
@@ -57,49 +51,55 @@ try {
             $finalFolder = Join-Path $modPath $folderName
 
             if (Test-Path $finalFolder) { Remove-Item $finalFolder -Recurse -Force }
-            New-Item -ItemType Directory -Path $finalFolder | Out-Null
             
-            Move-Item "$modContentRoot\*" $finalFolder -Force
-
-            $picFile = Get-ChildItem -Path $finalFolder -Include "*.png","*.jpg" | Select-Object -First 1
-            $picLine = if ($picFile) { "`npicture=`"$($picFile.Name)`"" } else { "" }
-
-            # --- GENERATING .MOD FILE ---
-            $modFileContent = "version=`"$version`"`ntags={`n`t$tags`n}`nname=`"$modName`"`n$picLine`npath=`"mod/$folderName`""
+            # --- DIRECT TURBO EXTRACTION 🚀 ---
+            write-host ">>> target: $folderName... (extraction in progress) ヽ(>∀<☆)ノ" -foregroundcolor darkgray
+            [System.IO.Compression.ZipFile]::ExtractToDirectory($zip.FullName, $finalFolder)
+            
+            # Writing the .mod file for the game launcher
+            $modFileContent = "version=`"$version`"`ntags={`n`t$tags`n}`nname=`"$modName`"`npath=`"mod/$folderName`""
             $finalModPath = Join-Path $modPath "$folderName.mod"
             [System.IO.File]::WriteAllText($finalModPath, $modFileContent, [System.Text.Encoding]::UTF8)
 
             Move-Item $zip.FullName $storagePath -Force
-            
-            write-host "DONE: $modName ($([Math]::Round($unpackDuration, 2))s) (^_<)b" -foregroundcolor green
 
-            # --- EMOTIONAL ENGINE 3.0 ---
-            if ($unpackDuration -gt 30) {
-                write-host "`nsorry, i was trying to make it faster, sorry ＞︿＜" -foregroundcolor yellow
-                $choice = read-host "will you hate my script? (y/n) {{{(>_<)}}}"
-                if ($choice -eq 'y') {
-                    write-host "my heart is broken... why do you so big meanie? (╥﹏╥)" -foregroundcolor red
-                } elseif ($choice -eq 'n') {
-                    write-host "phew, you are so kind! (´｡• ᵕ •｡`) ♡" -foregroundcolor cyan
+            $unpackDuration = [Math]::Round(((Get-Date) - $startTime).TotalSeconds, 2)
+            write-host "DONE: $modName ($unpackDuration s) (^_<)b" -foregroundcolor green
+
+            # --- EMOTIONAL ENGINE 1.5.1 (The "Soft Heart" Patch) ---
+            if ($unpackDuration -le 30) {
+                write-host "`nK-KAWAII!! I was so fast! Only $unpackDuration seconds! (๑˃ᴗ˂)ﻭ" -foregroundcolor cyan
+                $star = read-host "will you star me on GitHub? It would make my day! (y/n) (^///^)"
+                
+                if ($star -eq 'y') { 
+                    write-host "Yippy!!!!!!!!!! thank uuuuuuu!!!! (人◕ω◕)" -foregroundcolor yellow 
+                } else { 
+                    write-host "oh... okay... i'll still work my best for you... (´。• ᵕ •｡`)" -foregroundcolor gray 
                 }
-            } else {
-                write-host "`nwow, that was fast! i'm on fire today! (๑˃ᴗ˂)ﻭ" -foregroundcolor cyan
-                $starChoice = read-host "will you star me on github? (y/n) (^///^)"
-                if ($starChoice -eq 'y') {
-                    write-host "yippy!!!!!!!!!! thank uuuuuuu!!!! (^人^)" -foregroundcolor yellow
-                } elseif ($starChoice -eq 'n') {
-                    write-host "why? but okay... i'll still work good... （＞人＜；）" -foregroundcolor gray
+            } 
+            else {
+                write-host "`nuwaaaa! $unpackDuration seconds?! i'm so sorry... (╥﹏╥)" -foregroundcolor yellow
+                write-host "i tried my best, but i was too slow... (｡T ω T｡)" -foregroundcolor gray
+                
+                $hate = read-host "do you hate me now because i'm so slow? (y/n) {{{(>_<)}}}"
+                
+                if ($hate -eq 'y') { 
+                    write-host "why are you such a big meanie?! i'm working so hard for you... (╥﹏╥)" -foregroundcolor red 
+                    write-host "my heart is broken... plz tell me on github if my heart is too slow... ＞︿＜" -foregroundcolor gray
+                } else { 
+                    write-host "phew! you are so kind to me! i'll try to break physics for you next time! (´｡• ᵕ •｡`) ♡" -foregroundcolor cyan 
                 }
             }
-        } else {
-            write-host "skip: no descriptor found (・_・;)" -foregroundcolor yellow
-        }
 
-        if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force }
+        } else {
+            $zipArchive.Dispose()
+            write-host "i'm skipping this one without descriptor 'cause it's too hard for my little heart... sorry that i'm so stupid... (╥﹏╥)" -foregroundcolor yellow
+        }
     }
 } catch {
-    write-host "fatal error: $_ (╥﹏╥)" -foregroundcolor red
+    write-host "my logic is melting... i failed you... $_ (╥﹏╥)" -foregroundcolor red
 }
 
 write-host "`n--- MISSION COMPLETE! (★ω★) ---" -foregroundcolor magenta
-read-host "press enter to close"
+write-host "bye-bye! take care of your mods! (＾▽＾)ノ" -foregroundcolor magenta
+read-host "press enter to let me rest pweease... (｡♥‿♥｡)"; exit
