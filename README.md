@@ -1,6 +1,6 @@
-# PDX_Mods_Extractor ヽ(>∀<☆)ノ
+# PDX Mods Extractor ヽ(>∀<☆)ノ
 
-a simple, fast, and slightly emotional powershell script to extract your paradox interactive mods (ck3, hoi4, eu4, stellaris, etc.) without the launcher's gibberish folder names.
+a simple, fast, and slightly emotional powershell script to extract your paradox interactive mods (CK3, HOI4, EU5, etc.) without the launcher's gibberish folder names.
 
 ### why use me? (・_・;)
 * **no more ugc_12345:** i rename folders to the actual mod names so you can actually find them.
