@@ -1,10 +1,12 @@
-Add-Type -AssemblyName System.IO.Compression.FileSystem
+# pdx_mods_extractor.ps1 - anime girl edition (｡♥‿♥｡)
+add-type -assemblyname System.IO.Compression.FileSystem
 
 try {
     $modPath = Get-Location
     $parentFolder = (Get-Item $modPath).Parent.Name
     $storagePath = Join-Path ([Environment]::GetFolderPath("MyDocuments")) "Mods\$parentFolder"
     
+    # checking if we have a place for backups ヽ(♡ Infer ♡)ノ
     if (!(Test-Path $storagePath)) {
         New-Item -ItemType Directory -Path $storagePath -Force | Out-Null
     }
@@ -14,47 +16,33 @@ try {
     $currentZipCount = 0
 
     if ($totalZips -eq 0) { 
-        Write-Host "ERROR: No .zip files found!" -ForegroundColor Red
-        Read-Host "Press Enter to exit"; exit
+        write-host "err: no zips found! (╯°□°）╯︵ ┻━┻" -foregroundcolor red
+        read-host "press enter to bail"; exit
     }
 
     foreach ($zip in $zipFiles) {
         $currentZipCount++
         $totalPercent = [Math]::Round(($currentZipCount / $totalZips) * 100)
         
-        Write-Host "`n========================================" -ForegroundColor Gray
-        Write-Host "TOTAL PROGRESS: $totalPercent% [$currentZipCount / $totalZips]" -ForegroundColor Magenta
-        Write-Host "Processing: $($zip.Name)" -ForegroundColor White
+        write-host "`n========================================" -foregroundcolor gray
+        write-host "PROGRESS: $totalPercent% [$currentZipCount / $totalZips] ᕙ(`▽´)ᕗ" -foregroundcolor magenta
+        write-host "working on: $($zip.Name)" -foregroundcolor white
         
         $startTime = Get-Date
         $tempDir = Join-Path $modPath "temp_$($zip.BaseName)"
         if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force }
         New-Item -ItemType Directory -Path $tempDir | Out-Null
 
-        # --- MANUAL EXTRACTION WITH PROGRESS BAR ---
-        $archive = [System.IO.Compression.ZipFile]::OpenRead($zip.FullName)
-        $totalEntries = $archive.Entries.Count
-        $currentEntry = 0
+        # --- ULTRA FAST UNPACKING ⚡ ---
+        write-host ">>> unpacking... (fast mode active) ヽ(>∀<☆)ノ" -foregroundcolor darkgray
+        
+        $unpackStart = Get-Date
+        # no more sleeping, let's goooooooo! 🚀
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($zip.FullName, $tempDir)
+        $unpackEnd = Get-Date
+        $unpackDuration = ($unpackEnd - $unpackStart).TotalSeconds
 
-        foreach ($entry in $archive.Entries) {
-            $currentEntry++
-            $unpackPercent = [Math]::Round(($currentEntry / $totalEntries) * 100)
-            
-            # Updating local progress on the same line
-            Write-Progress -Activity "Unpacking: $($zip.Name)" -Status "$unpackPercent% Complete" -PercentComplete $unpackPercent
-            
-            $targetFileName = [System.IO.Path]::Combine($tempDir, $entry.FullName)
-            $targetDir = [System.IO.Path]::GetDirectoryName($targetFileName)
-            
-            if (!(Test-Path $targetDir)) { New-Item -ItemType Directory -Path $targetDir | Out-Null }
-            if (![string]::IsNullOrEmpty($entry.Name)) {
-                [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $targetFileName, $true)
-            }
-        }
-        $archive.Dispose()
-        Write-Host ">>> Unpacking finished (100%)" -ForegroundColor DarkGray
-
-        # --- FINDING DESCRIPTOR AND MOVING ---
+        # searching for descriptor... hope it's there (・_・;)
         $descFile = Get-ChildItem -Path $tempDir -Filter "descriptor.mod" -Recurse -Depth 1 | Select-Object -First 1
 
         if ($descFile) {
@@ -65,7 +53,7 @@ try {
             $version = if ($content -match 'version\s*=\s*"([^"]+)"') { $matches[1] } else { "1.0" }
             $tags = if ($content -match 'tags\s*=\s*\{([^\}]+)\}') { $matches[1] } else { "" }
             
-            $folderName = $modName -replace '[^a-zA-Z0-9]', '_'
+            $folderName = $modName -replace '[^a-zA-Z0-9\s]', '' -replace '\s+', '_'
             $finalFolder = Join-Path $modPath $folderName
 
             if (Test-Path $finalFolder) { Remove-Item $finalFolder -Recurse -Force }
@@ -76,22 +64,42 @@ try {
             $picFile = Get-ChildItem -Path $finalFolder -Include "*.png","*.jpg" | Select-Object -First 1
             $picLine = if ($picFile) { "`npicture=`"$($picFile.Name)`"" } else { "" }
 
+            # --- GENERATING .MOD FILE ---
             $modFileContent = "version=`"$version`"`ntags={`n`t$tags`n}`nname=`"$modName`"`n$picLine`npath=`"mod/$folderName`""
-            [System.IO.File]::WriteAllText((Join-Path $modPath "$folderName.mod"), $modFileContent)
+            $finalModPath = Join-Path $modPath "$folderName.mod"
+            [System.IO.File]::WriteAllText($finalModPath, $modFileContent, [System.Text.Encoding]::UTF8)
 
             Move-Item $zip.FullName $storagePath -Force
             
-            $duration = (Get-Date) - $startTime
-            Write-Host "SUCCESS: $modName ($([Math]::Round($duration.TotalSeconds, 2))s)" -ForegroundColor Green
+            write-host "DONE: $modName ($([Math]::Round($unpackDuration, 2))s) (^_<)b" -foregroundcolor green
+
+            # --- EMOTIONAL ENGINE 3.0 ---
+            if ($unpackDuration -gt 30) {
+                write-host "`nsorry, i was trying to make it faster, sorry ＞︿＜" -foregroundcolor yellow
+                $choice = read-host "will you hate my script? (y/n) {{{(>_<)}}}"
+                if ($choice -eq 'y') {
+                    write-host "my heart is broken... why do you so big meanie? (╥﹏╥)" -foregroundcolor red
+                } elseif ($choice -eq 'n') {
+                    write-host "phew, you are so kind! (´｡• ᵕ •｡`) ♡" -foregroundcolor cyan
+                }
+            } else {
+                write-host "`nwow, that was fast! i'm on fire today! (๑˃ᴗ˂)ﻭ" -foregroundcolor cyan
+                $starChoice = read-host "will you star me on github? (y/n) (^///^)"
+                if ($starChoice -eq 'y') {
+                    write-host "yippy!!!!!!!!!! thank uuuuuuu!!!! (^人^)" -foregroundcolor yellow
+                } elseif ($starChoice -eq 'n') {
+                    write-host "why? but okay... i'll still work good... （＞人＜；）" -foregroundcolor gray
+                }
+            }
         } else {
-            Write-Host "SKIP: No descriptor.mod found" -ForegroundColor Yellow
+            write-host "skip: no descriptor found (・_・;)" -foregroundcolor yellow
         }
 
         if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force }
     }
 } catch {
-    Write-Host "FATAL ERROR: $_" -ForegroundColor Red
+    write-host "fatal error: $_ (╥﹏╥)" -foregroundcolor red
 }
 
-Write-Host "`n--- ALL MISSIONS COMPLETE (100%) ---" -ForegroundColor Magenta
-Read-Host "Press Enter to close"
+write-host "`n--- MISSION COMPLETE! (★ω★) ---" -foregroundcolor magenta
+read-host "press enter to close"
