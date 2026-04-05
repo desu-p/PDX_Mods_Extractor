@@ -1,7 +1,6 @@
-# pdx_mods_extractor.ps1 - anime girl edition v1.15.1 (｡♥‿♥｡)
-# mascot: a hardworking spirit who just wants to be fast enough for you.
-# version: 1.15.1 - "The Soft Heart Patch"
-add-type -assemblyname System.IO.Compression.FileSystem
+# pdx_mods_extractor.ps1 - anime girl edition v1.5.2 (Turbo Stealth Mode!) (｡♥‿♥｡)
+# mascot: a hardworking fanloid girl who learned to be quiet and fast for you!
+Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 try {
     $modPath = Get-Location
@@ -16,28 +15,38 @@ try {
     $zipFiles = Get-ChildItem -Path $modPath -Filter "*.zip"
     $totalZips = $zipFiles.Count
     $currentZipCount = 0
+    $totalUnpackTime = 0
 
     if ($totalZips -eq 0) { 
-        write-host "err: no zips found! (╯°□°）╯︵ ┻━┻" -foregroundcolor red
-        read-host "press enter to bail"; exit
+        Write-Host "uwaaa! no zips found! where did they go?! (╯°□°）╯︵ ┻━┻" -ForegroundColor Red
+        Read-Host "press enter to bail... ＞︿＜"
+        exit
     }
 
+    Write-Host "starting super fast batch extraction of $totalZips mods... pwease wait! (´• ω •`)" -ForegroundColor Cyan
+    Write-Host "i will be quiet until the end so you can eat your yummy food! but star me on github later pweease! ( ˘▽˘)っ♨`n" -ForegroundColor DarkGray
+
+    # --- BATCH PROCESSING START (Ninja Mode) ---
     foreach ($zip in $zipFiles) {
         $currentZipCount++
-        $totalPercent = [Math]::Round(($currentZipCount / $totalZips) * 100)
-        
-        write-host "`n========================================" -foregroundcolor gray
-        write-host "PROGRESS: $totalPercent% [$currentZipCount / $totalZips] ᕙ(`▽´)ᕗ" -foregroundcolor magenta
-        write-host "working on: $($zip.Name)" -foregroundcolor white
-        
         $startTime = Get-Date
         
-        # Peek inside to find the descriptor - no time to waste! ⚡
+        # drawing the kawaii progress bar (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧
+        $percent = [Math]::Round(($currentZipCount / $totalZips) * 100)
+        $barLength = 25
+        $doneCount = [Math]::Floor($percent / (100 / $barLength))
+        $todoCount = $barLength - $doneCount
+        $bar = ("█" * $doneCount) + ("░" * $todoCount)
+        
+        # updating the same line so it's not messy! we keep it clean! 🧹
+        $statusLine = "`r[$bar] $percent% | unpacking: $($zip.BaseName)"
+        Write-Host $statusLine.PadRight(100) -NoNewline -ForegroundColor Cyan
+
+        # peeking inside the zip really fast! ⚡ (¬‿¬ )
         $zipArchive = [System.IO.Compression.ZipFile]::OpenRead($zip.FullName)
         $descriptor = $zipArchive.Entries | Where-Object { $_.Name -eq "descriptor.mod" } | Select-Object -First 1
 
         if ($descriptor) {
-            # Getting mod metadata directly from memory
             $reader = New-Object System.IO.StreamReader($descriptor.Open())
             $content = $reader.ReadToEnd()
             $reader.Close()
@@ -52,54 +61,63 @@ try {
 
             if (Test-Path $finalFolder) { Remove-Item $finalFolder -Recurse -Force }
             
-            # --- DIRECT TURBO EXTRACTION 🚀 ---
-            write-host ">>> target: $folderName... (extraction in progress) ヽ(>∀<☆)ノ" -foregroundcolor darkgray
+            # zoom zoom direct unpacking! 🚀 (≧◡≦)
             [System.IO.Compression.ZipFile]::ExtractToDirectory($zip.FullName, $finalFolder)
             
-            # Writing the .mod file for the game launcher
+            # writing the .mod file for the game launcher so it's happy (^_<)b
             $modFileContent = "version=`"$version`"`ntags={`n`t$tags`n}`nname=`"$modName`"`npath=`"mod/$folderName`""
             $finalModPath = Join-Path $modPath "$folderName.mod"
             [System.IO.File]::WriteAllText($finalModPath, $modFileContent, [System.Text.Encoding]::UTF8)
 
             Move-Item $zip.FullName $storagePath -Force
 
-            $unpackDuration = [Math]::Round(((Get-Date) - $startTime).TotalSeconds, 2)
-            write-host "DONE: $modName ($unpackDuration s) (^_<)b" -foregroundcolor green
-
-            # --- EMOTIONAL ENGINE 1.5.1 (The "Soft Heart" Patch) ---
-            if ($unpackDuration -le 30) {
-                write-host "`nK-KAWAII!! I was so fast! Only $unpackDuration seconds! (๑˃ᴗ˂)ﻭ" -foregroundcolor cyan
-                $star = read-host "will you star me on GitHub? It would make my day! (y/n) (^///^)"
-                
-                if ($star -eq 'y') { 
-                    write-host "Yippy!!!!!!!!!! thank uuuuuuu!!!! (人◕ω◕)" -foregroundcolor yellow 
-                } else { 
-                    write-host "oh... okay... i'll still work my best for you... (´。• ᵕ •｡`)" -foregroundcolor gray 
-                }
-            } 
-            else {
-                write-host "`nuwaaaa! $unpackDuration seconds?! i'm so sorry... (╥﹏╥)" -foregroundcolor yellow
-                write-host "i tried my best, but i was too slow... (｡T ω T｡)" -foregroundcolor gray
-                
-                $hate = read-host "do you hate me now because i'm so slow? (y/n) {{{(>_<)}}}"
-                
-                if ($hate -eq 'y') { 
-                    write-host "why are you such a big meanie?! i'm working so hard for you... (╥﹏╥)" -foregroundcolor red 
-                    write-host "my heart is broken... plz tell me on github if my heart is too slow... ＞︿＜" -foregroundcolor gray
-                } else { 
-                    write-host "phew! you are so kind to me! i'll try to break physics for you next time! (´｡• ᵕ •｡`) ♡" -foregroundcolor cyan 
-                }
-            }
-
+            $duration = [Math]::Round(((Get-Date) - $startTime).TotalSeconds, 2)
+            $totalUnpackTime += $duration
         } else {
             $zipArchive.Dispose()
-            write-host "i'm skipping this one without descriptor 'cause it's too hard for my little heart... sorry that i'm so stupid... (╥﹏╥)" -foregroundcolor yellow
+            # if it's broken, we cry a little and skip 
+            Write-Host "`ruwaa! skipping $($zip.Name) cuz no descriptor.mod found... (´-ω-`)".PadRight(100) -ForegroundColor Yellow
         }
     }
+
+    Write-Host "`n"
+
+    # --- EMOTIONAL ENGINE 1.5.2 (The "Good Girl" Patch) ---
+    Write-Host "========================================" -ForegroundColor Magenta
+    Write-Host "--- MISSION COMPLETE! (★ω★) ---" -ForegroundColor Magenta
+    Write-Host "total time for $totalZips mods: $($totalUnpackTime)s" -ForegroundColor White
+    Write-Host "========================================`n" -ForegroundColor Magenta
+
+    # checking if i was a fast girl today!
+    if ($totalUnpackTime -le ($totalZips * 10)) {
+        Write-Host "K-KAWAII!! i was super fast today right?! (๑˃ᴗ˂)ﻭ" -ForegroundColor Cyan
+        $choice = Read-Host "will you star me on GitHub? it would make my day! (y/n/s - already starred) (^///^)"
+        
+        if ($choice -eq 's') {
+            Write-Host "yippy! you are my hero! thank u for the star already! i'll work even harder for u! (❤ω❤)" -ForegroundColor Yellow
+        } elseif ($choice -eq 'y') {
+            Write-Host "Yippy!!!!!!!!!! thank uuuuuuu!!!! (人◕ω◕)" -ForegroundColor Cyan
+        } else {
+            Write-Host "oh... okay... i'll still work my best for you... (´｡• ᵕ •｡`)" -ForegroundColor DarkGray
+        }
+    } else {
+        Write-Host "uwaaaa! $totalUnpackTime seconds?! i'm so sorry... (╥﹏╥)" -ForegroundColor Yellow
+        Write-Host "i tried my best, but i was too slow... (｡T ω T｡)" -ForegroundColor DarkGray
+        
+        $hate = Read-Host "do you hate me now because i'm so slow? (y/n) {{{(>_<)}}}"
+        
+        if ($hate -eq 'y') {
+            Write-Host "why are you so a big meanie?! i'm working so hard for you... (╥﹏╥)" -ForegroundColor Red
+            Write-Host "my heart is broken... plz tell me on github if my heart is too slow... ＞︿＜" -ForegroundColor DarkGray
+        } else {
+            Write-Host "phew! you are so kind to me! i'll try to break physics for you next time! (´｡• ᵕ •｡`) ♡" -ForegroundColor Cyan
+        }
+    }
+
 } catch {
-    write-host "my logic is melting... i failed you... $_ (╥﹏╥)" -foregroundcolor red
+    Write-Host "`nmy logic is melting... i failed you... $_ (╥﹏╥)" -ForegroundColor Red
 }
 
-write-host "`n--- MISSION COMPLETE! (★ω★) ---" -foregroundcolor magenta
-write-host "bye-bye! take care of your mods! (＾▽＾)ノ" -foregroundcolor magenta
-read-host "press enter to let me rest pweease... (｡♥‿♥｡)"; exit
+Write-Host "`nbye-bye! take care of your mods! (＾▽＾)ノ" -ForegroundColor Magenta
+Read-Host "press enter to let me rest pweease... ＞︿＜"
+exit
