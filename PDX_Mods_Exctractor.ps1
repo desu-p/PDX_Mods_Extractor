@@ -82,7 +82,7 @@ try {
 
     Write-Host "`n"
 
-    # --- EMOTIONAL ENGINE 1.5.2 (The "Good Girl" Patch) ---
+    # --- EMOTIONAL ENGINE 1.6 (The "Good Girl" Update) ---
     Write-Host "========================================" -ForegroundColor Magenta
     Write-Host "--- MISSION COMPLETE! (★ω★) ---" -ForegroundColor Magenta
     Write-Host "total time for $totalZips mods: $($totalUnpackTime)s" -ForegroundColor White
