@@ -51,7 +51,8 @@ try {
             
             # --- PROGRESS BAR LOGIC ---
             $percent = [Math]::Round(($processedSizeBytes / $totalSizeBytes) * 100)
-            $bar = ("█" * [Math]::Floor($percent / 4)) + ("░" * (25 - [Math]::Floor($percent / 4)))
+            $count = [Math]::Floor($percent / 14.29) 
+            $bar = ("o" * $count).PadRight(7, " ")
             write-host ("`r[$bar] $percent% | unpacking: $modName").PadRight(100) -NoNewline -ForegroundColor Cyan
 
             [System.IO.Compression.ZipFile]::ExtractToDirectory($zip.FullName, $finalFolder)
